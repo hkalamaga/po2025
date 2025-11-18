@@ -34,10 +34,28 @@ public class Samochod {
             System.out.println("Silnik wylaczony");
             return;
         }
-        double dx = cel.getX() - pozycja.getX();
-        double dy = cel.getY() - pozycja.getY();
-        pozycja.aktualizujPozycje(dx, dy);
-        System.out.println("Samochod dojechal do: " + getAktPozycja());
+        double xcel = cel.getX() - pozycja.getX();
+        double ycel = cel.getY() - pozycja.getY();
+        System.out.println("Samochod jedzie do: (" + xcel + ", " + ycel + ")");
+
+        while (true) {
+            double v = getAktPredkosc() / 3.6;
+            if (v==0){
+                System.out.println("Samochod nie jedzie");
+                return;
+            }
+
+            //jeden krok ruchu
+            pozycja.przemiesc(xcel, ycel, v);
+            //spr czy blisko cel
+            if(Math.abs(pozycja.getX() -xcel) < 0.01
+                && Math.abs(pozycja.getY() - ycel) <0.01) {
+                pozycja.aktualizujPozycje(xcel - pozycja.getX(), ycel - pozycja.getY());
+
+                System.out.println("Samochod dojechal do: " + getAktPozycja());
+                break;
+            }
+        }
     }
     public double getWaga(){
         return silnik.getWaga() + skrzynia.getWaga() + sprzeglo.getWaga();
