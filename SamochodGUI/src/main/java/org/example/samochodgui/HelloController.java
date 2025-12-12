@@ -11,6 +11,14 @@ import symulator.Silnik;
 import symulator.SkrzyniaBiegow;
 import symulator.Sprzeglo;
 import symulator.Pozycja;
+import javafx.scene.image.Image;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+import java.io.IOException;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
 
 public class HelloController {
     //MAPA
@@ -23,7 +31,7 @@ public class HelloController {
     @FXML private MenuItem closeMenuItem;
     @FXML private MenuItem deleteMenuItem;
     //TOOLBAR
-    @FXML private ComboBox<String> carComboBox;
+    @FXML private ComboBox<Samochod> carComboBox;
     @FXML private Button addCarButton;
     @FXML private Button deleteCarButton;
     //Samochod
@@ -63,6 +71,10 @@ public class HelloController {
     @FXML private Button releaseClutchButton;
 
     private Samochod samochod;
+    //lista samochodow
+    private static ObservableList<Samochod> samochody =
+            FXCollections.observableArrayList();
+
     //tworzenie samochodu
     public void initialize() {
         Silnik silnik = new Silnik("Silnik 1.9 TDI", 150.0, 5000.0, 5500);
@@ -70,22 +82,55 @@ public class HelloController {
         Sprzeglo sprzeglo = new Sprzeglo("Sprzeglo", 18.0, 600.0);
         Pozycja pozycja = new Pozycja(0,0);
 
-        samochod = new Samochod("TSZ28312", 160, silnik, skrzynia, sprzeglo, pozycja);
-
-        carComboBox.getItems().add("Samochod 1");
-        carComboBox.getSelectionModel().selectFirst();
+        samochod = new Samochod("Volkswagen","TSZ28312", 160, silnik, skrzynia, sprzeglo, pozycja);
 
         System.out.println("Samochód gotowy!");
-        refreshCarData();
+        refresh();
 
+        Image carImage = new Image(
+                getClass().getResource("/org/example/samochodgui/car_image.png").toExternalForm()
+        );
+
+        carImageView.setImage(carImage);
+        carImageView.setFitWidth(100);
+        carImageView.setFitHeight(100);
+        carImageView.setTranslateX(0);
+        carImageView.setTranslateY(0);
+
+        carComboBox.setItems(samochody);
+        carComboBox.setOnAction(e -> {
+            samochod = carComboBox.getValue();
+            refresh();
+        });
     }
-    private void refreshCarData() {
-        modelTextField.setText("Volkswagen");
-        plateTextField.setText("TSZ28312");
+    private void refresh() {
+        if (samochod == null) return;
+
+        // Samochod
+        modelTextField.setText(samochod.getModel());
+        plateTextField.setText(samochod.getNrRejest());
         weightTextField.setText(String.valueOf(samochod.getWaga()));
-        speedTextField.setText("0");
+        speedTextField.setText(String.valueOf(samochod.getAktPredkosc()));
+
+        // Skrzynia
         gearboxNameTextField.setText(samochod.getSkrzynia().getNazwa());
+        gearboxPriceTextField.setText(String.valueOf(samochod.getSkrzynia().getCena()));
+        gearboxWeightTextField.setText(String.valueOf(samochod.getSkrzynia().getWaga()));
+        gearboxGearTextField.setText(String.valueOf(samochod.getSkrzynia().getAktBieg()));
+
+        // Silnik
         engineNameTextField.setText(samochod.getSilnik().getNazwa());
+        enginePriceTextField.setText(String.valueOf(samochod.getSilnik().getCena()));
+        engineWeightTextField.setText(String.valueOf(samochod.getSilnik().getWaga()));
+        engineRpmTextField.setText(String.valueOf(samochod.getSilnik().getObroty()));
+
+        // Sprzeglo
+        clutchNameTextField.setText(samochod.getSprzeglo().getNazwa());
+        clutchPriceTextField.setText(String.valueOf(samochod.getSprzeglo().getCena()));
+        clutchWeightTextField.setText(String.valueOf(samochod.getSprzeglo().getWaga()));
+        clutchStateTextField.setText(
+                samochod.getSprzeglo().czyWcisniete() ? "Wciśnięte" : "Zwolnione"
+        );
     }
 
     @FXML
@@ -98,47 +143,72 @@ public class HelloController {
 
     //metody do obslugi zdarzen
     @FXML
-    public void onStopButton() {
+    public void onStopButton(ActionEvent actionEvent) {
         samochod.wylacz();
-        engineRpmTextField.setText("0");
+        refresh();
     }
     @FXML
-    public void onStartButton() {
+    public void onStartButton(ActionEvent actionEvent) {
         samochod.wlacz();
-        engineRpmTextField.setText(String.valueOf(samochod.getSilnik().getObroty()));
+        refresh();
     }
     @FXML
-    public void onCarExtraButton() {
+    public void onCarExtraButton(ActionEvent actionEvent) {
         System.out.println("Dod przycisk wcisniety!");
+        refresh();
     }
     @FXML
-    public void onIncreaseGearButton() {
+    public void onIncreaseGearButton(ActionEvent actionEvent) {
+        System.out.println("Zwieksz bieg");
         samochod.getSkrzynia().zwiekszBieg();
-        gearboxGearTextField.setText(String.valueOf(samochod.getSkrzynia().getAktBieg()));
+        refresh();
     }
     @FXML
-    public void onDecreaseGearButton() {
+    public void onDecreaseGearButton(ActionEvent actionEvent) {
+        System.out.println("Zmniejsz bieg");
         samochod.getSkrzynia().zmniejszBieg();
-        gearboxGearTextField.setText(String.valueOf(samochod.getSkrzynia().getAktBieg()));
+        refresh();
     }
     @FXML
-    public void onIncreaseRpmButton() {
+    public void onIncreaseRpmButton(ActionEvent actionEvent) {
+        System.out.println("Dodaj gazu");
         samochod.getSilnik().zwiekszObroty();
-        engineRpmTextField.setText(String.valueOf(samochod.getSilnik().getObroty()));
+        refresh();
     }
     @FXML
-    public void onDecreaseRpmButton() {
+    public void onDecreaseRpmButton(ActionEvent actionEvent) {
+        System.out.println("Odejmij gazu");
         samochod.getSilnik().zmniejszObroty();
-        engineRpmTextField.setText(String.valueOf(samochod.getSilnik().getObroty()));
+        refresh();
     }
     @FXML
-    public void onPressClutchButton() {
+    public void onPressClutchButton(ActionEvent actionEvent) {
         samochod.getSprzeglo().wcisnij();
-        clutchStateTextField.setText("Wciśnięte");
+        refresh();
     }
     @FXML
-    public void onReleaseClutchButton() {
+    public void onReleaseClutchButton(ActionEvent actionEvent) {
         samochod.getSprzeglo().zwolnij();
-        clutchStateTextField.setText("Zwolnione");
+        refresh();
     }
+    public static void addCarToList(String model,String registration,double weight,int speed) {
+        Silnik silnik = new Silnik("Domyślny silnik", weight * 0.4, 3000, 6000);
+        SkrzyniaBiegow skrzynia = new SkrzyniaBiegow("Domyślna skrzynia", weight * 0.2, 2000, 5);
+        Sprzeglo sprzeglo = new Sprzeglo("Domyślne sprzęgło", weight * 0.1, 1000);
+        Pozycja pozycja = new Pozycja(0, 0);
+
+        Samochod nowy = new Samochod(model,registration,speed,silnik,skrzynia,sprzeglo,pozycja);
+        samochody.add(nowy);
+    }
+    public void openAddCarWindow() throws IOException {
+        FXMLLoader loader = new FXMLLoader(
+                getClass().getResource("DodajSamochod.fxml")
+        );
+
+        Stage stage = new Stage();
+        stage.setScene(new Scene(loader.load()));
+        stage.setTitle("Dodaj nowy samochód");
+        stage.show();
+    }
+
 }

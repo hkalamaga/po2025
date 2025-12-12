@@ -8,9 +8,11 @@ public class Samochod {
     private boolean stanWlaczenia;
     private String nrRejest;
     private int predkoscMax;
+    private String model;
 
-    public Samochod(String nrRejest, int predkoscMax, Silnik silnik,
+    public Samochod(String model,String nrRejest, int predkoscMax, Silnik silnik,
                     SkrzyniaBiegow skrzynia, Sprzeglo sprzeglo, Pozycja pozycja) {
+        this.model=model;
         this.nrRejest = nrRejest;
         this.predkoscMax = predkoscMax;
         this.silnik = silnik;
@@ -84,6 +86,15 @@ public class Samochod {
 
     public Sprzeglo getSprzeglo() {
         return sprzeglo;
+    }
+    public String getModel() {
+        return model;
+    }
+    public String getNrRejest(){
+        return nrRejest;
+    }
+    public int getPredkoscMax() {
+        return predkoscMax;
     }
 
 
