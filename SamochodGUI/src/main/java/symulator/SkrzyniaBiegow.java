@@ -10,15 +10,21 @@ public class SkrzyniaBiegow extends Komponent {
         this.aktualnyBieg = 0;
     }
     public void zwiekszBieg() {
-        if (aktualnyBieg < iloscBiegow) {
-            aktualnyBieg++;
+        if (aktualnyBieg >= iloscBiegow) {
+            throw new SamochodException(
+                    "Nie mozna zwiekszyc biegu powyzej " + iloscBiegow
+            );
         }
+
+        aktualnyBieg++;
         System.out.println("Aktualny bieg: " + aktualnyBieg);
     }
+
     public void zmniejszBieg() {
-        if(aktualnyBieg > 0) {
-            aktualnyBieg--;
+        if (aktualnyBieg <= 0) {
+            throw new SamochodException("Nie mozna zmniejszyc biegu ponizej 0");
         }
+        aktualnyBieg--;
         System.out.println("Aktualny bieg: " + aktualnyBieg);
     }
     public int getAktBieg() {
@@ -26,8 +32,6 @@ public class SkrzyniaBiegow extends Komponent {
     }
     public double getIloscBiegow() {
         return iloscBiegow;
-
-
     }
 
 }

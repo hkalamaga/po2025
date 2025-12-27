@@ -1,6 +1,8 @@
 package symulator;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Samochod {
+public class Samochod extends Thread {
     private Silnik silnik;
     private SkrzyniaBiegow skrzynia;
     private Sprzeglo sprzeglo;
@@ -9,6 +11,9 @@ public class Samochod {
     private String nrRejest;
     private int predkoscMax;
     private String model;
+    private Pozycja cel;
+    private List<Listener> listeners = new ArrayList<>();
+    private volatile boolean running = true;
 
     public Samochod(String model,String nrRejest, int predkoscMax, Silnik silnik,
                     SkrzyniaBiegow skrzynia, Sprzeglo sprzeglo, Pozycja pozycja) {
@@ -20,6 +25,7 @@ public class Samochod {
         this.sprzeglo = sprzeglo;
         this.pozycja = pozycja;
         this.stanWlaczenia = false;
+        this.start();
     }
     public void wlacz(){
         stanWlaczenia = true;
@@ -31,34 +37,14 @@ public class Samochod {
         silnik.zatrzymaj();
         System.out.println("Samochod wylaczony");
     }
-    public void jedzDo(Pozycja cel){
-        if (!stanWlaczenia || silnik.getObroty() ==0){
+    public void jedzDo(Pozycja nowaPozycja) {
+        if (!stanWlaczenia || silnik.getObroty() == 0) {
             System.out.println("Silnik wylaczony");
             return;
         }
-        double xcel = cel.getX() - pozycja.getX();
-        double ycel = cel.getY() - pozycja.getY();
-        System.out.println("Samochod jedzie do: (" + xcel + ", " + ycel + ")");
-
-        while (true) {
-            double v = getAktPredkosc() / 3.6;
-            if (v==0){
-                System.out.println("Samochod nie jedzie");
-                return;
-            }
-
-            //jeden krok ruchu
-            pozycja.przemiesc(xcel, ycel, v);
-            //spr czy blisko cel
-            if(Math.abs(pozycja.getX() -xcel) < 0.01
-                && Math.abs(pozycja.getY() - ycel) <0.01) {
-                pozycja.aktualizujPozycje(xcel - pozycja.getX(), ycel - pozycja.getY());
-
-                System.out.println("Samochod dojechal do: " + getAktPozycja());
-                break;
-            }
-        }
+        this.cel = nowaPozycja;
     }
+
     public double getWaga(){
         return silnik.getWaga() + skrzynia.getWaga() + sprzeglo.getWaga();
     }
@@ -69,12 +55,9 @@ public class Samochod {
         int predkosc = skrzynia.getAktBieg() * 20;
         return Math.min(predkosc, predkoscMax);
     }
-    public String getAktPozycja(){
-        return pozycja.getPozycja();
-    }
+    @Override
     public String toString() {
-        return "nrRejest: " + nrRejest + "\n" + "Pozycja: " + getAktPozycja() + "\n" +
-                "Predkosc: " + getAktPredkosc() + "km/h\n" + "Waga: " + getWaga() + "kg\n";
+        return model + " (" + nrRejest + ")";
     }
     public Silnik getSilnik() {
         return silnik;
@@ -93,9 +76,56 @@ public class Samochod {
     public String getNrRejest(){
         return nrRejest;
     }
-    public int getPredkoscMax() {
-        return predkoscMax;
+    public void addListener(Listener listener) {
+        listeners.add(listener);
     }
 
+    public void removeListener(Listener listener) {
+        listeners.remove(listener);
+    }
 
+    private void notifyListeners() {
+        for (Listener listener : listeners) {
+            listener.update();
+        }
+    }
+    @Override
+    public void run() {
+        double deltat = 0.1; // 100 ms
+
+        while (running) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                break;
+            }
+
+            if (cel != null && stanWlaczenia) {
+                double dx = cel.getX() - pozycja.getX();
+                double dy = cel.getY() - pozycja.getY();
+
+                double odleglosc = Math.sqrt(dx * dx + dy * dy);
+
+                if (odleglosc < 2) {
+                    pozycja.aktualizujPozycje(dx, dy);
+                    cel = null;
+                    continue;
+                }
+
+                double v = getAktPredkosc() / 3.6;
+
+                double vx = v * deltat * (dx / odleglosc);
+                double vy = v * deltat * (dy / odleglosc);
+
+                pozycja.aktualizujPozycje(vx, vy);
+                notifyListeners();
+
+            }
+        }
+    }
+
+    public Pozycja getPozycja() {
+        return pozycja;
+    }
 }
+

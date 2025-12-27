@@ -74,6 +74,16 @@ public class Samochod {
         return "nrRejest: " + nrRejest + "\n" + "Pozycja: " + getAktPozycja() + "\n" +
                 "Predkosc: " + getAktPredkosc() + "km/h\n" + "Waga: " + getWaga() + "kg\n";
     }
+    public Silnik getSilnik() {
+        return silnik;
+    }
+    public SkrzyniaBiegow getSkrzynia() {
+        return skrzynia;
+    }
+    public Sprzeglo getSprzeglo() {
+        return sprzeglo;
+    }
+
 
 
 }

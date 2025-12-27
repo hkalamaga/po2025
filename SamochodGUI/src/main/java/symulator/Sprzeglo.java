@@ -8,10 +8,16 @@ public class Sprzeglo extends Komponent {
         this.stanSprzegla = false;
     }
     public void wcisnij() {
+        if (stanSprzegla) {
+            throw new SamochodException("Sprzeglo jest juz wcisniete");
+        }
         stanSprzegla = true;
-        System.out.println("Sprzeglo wcisniete.");
+        System.out.println("Sprzeglo wcisniete");
     }
     public void zwolnij(){
+        if (!stanSprzegla) {
+            throw new SamochodException("Sprzeglo jest juz zwolnione");
+        }
         stanSprzegla = false;
         System.out.println("Sprzeglo zwolnione.");
     }

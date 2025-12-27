@@ -20,15 +20,24 @@ public class Silnik extends Komponent {
         System.out.println("obroty = " + obroty);
 
     }
-    public void zwiekszObroty(){
-        obroty = obroty + 100;
-        if(obroty > maxObroty) obroty = maxObroty;
-        System.out.println("Obroty wzrosly do:" + obroty);
+    public void zwiekszObroty() {
+        if (obroty + 100 > maxObroty) {
+            throw new SamochodException(
+                    "Nie mozna zwiększyc obrotow powyzej " + maxObroty
+            );
+        }
+        obroty += 100;
+        System.out.println("Obroty wzrosly do: " + obroty);
     }
-    public void zmniejszObroty(){
-        obroty = obroty - 100;
-        if(obroty < 800) obroty = 800;
-        System.out.println("Obroty zmalaly do:" + obroty);
+
+    public void zmniejszObroty() {
+        if (obroty - 100 < 800) {
+            throw new SamochodException(
+                    "Nie mozna zmniejszyc obrotow ponizej 800"
+            );
+        }
+        obroty -= 100;
+        System.out.println("Obroty zmalaly do: " + obroty);
     }
     public int getObroty() {
         return obroty;
@@ -36,5 +45,4 @@ public class Silnik extends Komponent {
     public int getMaxObroty() {
         return maxObroty;
     }
-
 }

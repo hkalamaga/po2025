@@ -6,11 +6,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
-import symulator.Samochod;
-import symulator.Silnik;
-import symulator.SkrzyniaBiegow;
-import symulator.Sprzeglo;
-import symulator.Pozycja;
+import symulator.*;
 import javafx.scene.image.Image;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -18,23 +14,24 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.application.Platform;
+import javafx.animation.AnimationTimer;
 
-
-public class HelloController {
-    //MAPA
+public class HelloController implements Listener {
+    //mapa
     @FXML private AnchorPane mapPane;
     @FXML private ImageView carImageView;
     @FXML private Label carLabel;
 
-    //MENU
+    //menu
     @FXML private MenuBar menuBar;
     @FXML private MenuItem closeMenuItem;
     @FXML private MenuItem deleteMenuItem;
-    //TOOLBAR
+    //toolbar
     @FXML private ComboBox<Samochod> carComboBox;
     @FXML private Button addCarButton;
     @FXML private Button deleteCarButton;
-    //Samochod
+    //samochod
     @FXML private TextField modelTextField;
     @FXML private TextField plateTextField;
     @FXML private TextField weightTextField;
@@ -42,8 +39,7 @@ public class HelloController {
 
     @FXML private Button startButton;
     @FXML private Button stopButton;
-    @FXML private Button carExtraButton;
-    //Skrzynia Biegow
+    //skrzynia Biegow
     @FXML private TextField gearboxNameTextField;
     @FXML private TextField gearboxPriceTextField;
     @FXML private TextField gearboxWeightTextField;
@@ -52,7 +48,7 @@ public class HelloController {
     @FXML private Button increaseGearButton;
     @FXML private Button decreaseGearButton;
 
-    //Silnik
+    //silnik
     @FXML private TextField engineNameTextField;
     @FXML private TextField enginePriceTextField;
     @FXML private TextField engineWeightTextField;
@@ -61,7 +57,7 @@ public class HelloController {
     @FXML private Button increaseRpmButton;
     @FXML private Button decreaseRpmButton;
 
-    //Sprzeglo
+    //sprzeglo
     @FXML private TextField clutchNameTextField;
     @FXML private TextField clutchPriceTextField;
     @FXML private TextField clutchWeightTextField;
@@ -83,8 +79,9 @@ public class HelloController {
         Pozycja pozycja = new Pozycja(0,0);
 
         samochod = new Samochod("Volkswagen","TSZ28312", 160, silnik, skrzynia, sprzeglo, pozycja);
-
-        System.out.println("Samochód gotowy!");
+        samochod.addListener(this);
+        samochody.add(samochod);
+        System.out.println("Samochod gotowy!");
         refresh();
 
         Image carImage = new Image(
@@ -99,9 +96,32 @@ public class HelloController {
 
         carComboBox.setItems(samochody);
         carComboBox.setOnAction(e -> {
+            if (samochod != null) {
+                samochod.removeListener(this);
+            }
+
             samochod = carComboBox.getValue();
+
+            if (samochod != null) {
+                samochod.addListener(this);
+            }
+
             refresh();
         });
+
+        mapPane.setOnMouseClicked(event -> {
+            if (samochod == null) {
+                pokazBlad("Nie wybrano samochodu!");
+                return;
+            }
+
+            double x = event.getX();
+            double y = event.getY();
+            System.out.println("Pozycja: x=" + x + ", y=" + y);
+            Pozycja nowaPozycja = new Pozycja(x, y);
+            samochod.jedzDo(nowaPozycja);
+        });
+
     }
     private void refresh() {
         if (samochod == null) return;
@@ -129,72 +149,123 @@ public class HelloController {
         clutchPriceTextField.setText(String.valueOf(samochod.getSprzeglo().getCena()));
         clutchWeightTextField.setText(String.valueOf(samochod.getSprzeglo().getWaga()));
         clutchStateTextField.setText(
-                samochod.getSprzeglo().czyWcisniete() ? "Wciśnięte" : "Zwolnione"
+                samochod.getSprzeglo().czyWcisniete() ? "Wcisniete" : "Zwolnione"
         );
+        Platform.runLater(() -> {
+            carImageView.setTranslateX(samochod.getPozycja().getX());
+            carImageView.setTranslateY(samochod.getPozycja().getY());
+        });
+
+        walidujStanJazdy();
+        if (samochod.getSprzeglo().czyWcisniete()) {
+            clutchStateTextField.setStyle("-fx-background-color: #fff3b0;");
+        } else {
+            clutchStateTextField.setStyle("");
+        }
+
     }
 
     @FXML
     private Label welcomeText;
 
-    @FXML
-    protected void onHelloButtonClick() {
-        welcomeText.setText("Welcome to JavaFX Application!");
-    }
-
     //metody do obslugi zdarzen
     @FXML
     public void onStopButton(ActionEvent actionEvent) {
+        if (samochod == null) {
+            pokazBlad("Brak samochodu do wylączenia!");
+            return;
+        }
         samochod.wylacz();
         refresh();
     }
     @FXML
     public void onStartButton(ActionEvent actionEvent) {
+        if (samochod == null) {
+            pokazBlad("Brak samochodu do uruchomienia!");
+            return;
+        }
         samochod.wlacz();
         refresh();
     }
     @FXML
-    public void onCarExtraButton(ActionEvent actionEvent) {
-        System.out.println("Dod przycisk wcisniety!");
-        refresh();
-    }
-    @FXML
     public void onIncreaseGearButton(ActionEvent actionEvent) {
-        System.out.println("Zwieksz bieg");
-        samochod.getSkrzynia().zwiekszBieg();
-        refresh();
+        if (samochod == null) {
+            pokazBlad("Brak samochodu- nie mozna zmienic biegu!");
+            return;
+        }
+        try {
+            samochod.getSkrzynia().zwiekszBieg();
+            refresh();
+        } catch (SamochodException e) {
+            pokazBlad(e.getMessage());
+        }
     }
+
     @FXML
     public void onDecreaseGearButton(ActionEvent actionEvent) {
-        System.out.println("Zmniejsz bieg");
-        samochod.getSkrzynia().zmniejszBieg();
-        refresh();
+        if (samochod == null) {
+            pokazBlad("Brak samochodu – nie mozna zmienic biegu!");
+            return;
+        }
+        try {
+            samochod.getSkrzynia().zmniejszBieg();
+            refresh();
+        } catch (SamochodException e) {
+            pokazBlad(e.getMessage());
+        }
     }
     @FXML
     public void onIncreaseRpmButton(ActionEvent actionEvent) {
-        System.out.println("Dodaj gazu");
-        samochod.getSilnik().zwiekszObroty();
-        refresh();
+        try {
+            samochod.getSilnik().zwiekszObroty();
+            refresh();
+        } catch (SamochodException e) {
+            pokazBlad(e.getMessage());
+        }
     }
     @FXML
     public void onDecreaseRpmButton(ActionEvent actionEvent) {
-        System.out.println("Odejmij gazu");
-        samochod.getSilnik().zmniejszObroty();
-        refresh();
+        if (samochod == null) {
+            pokazBlad("Brak samochodu – nie mozna odjac gazu!");
+            return;
+        }
+        try {
+            samochod.getSilnik().zmniejszObroty();
+            refresh();
+        } catch (SamochodException e) {
+            pokazBlad(e.getMessage());
+        }
     }
     @FXML
     public void onPressClutchButton(ActionEvent actionEvent) {
-        samochod.getSprzeglo().wcisnij();
-        refresh();
+        if (samochod == null) {
+            pokazBlad("Brak samochodu – nie mozna wcisnac sprzegla!");
+            return;
+        }
+        try {
+            samochod.getSprzeglo().wcisnij();
+            refresh();
+        } catch (SamochodException e) {
+            pokazBlad(e.getMessage());
+        }
     }
     @FXML
     public void onReleaseClutchButton(ActionEvent actionEvent) {
-        samochod.getSprzeglo().zwolnij();
-        refresh();
+        if (samochod == null) {
+            pokazBlad("Brak samochodu – nie mozna zwolnic sprzegla!");
+            return;
+        }
+        try {
+            samochod.getSprzeglo().zwolnij();
+            refresh();
+        } catch (SamochodException e) {
+            pokazBlad(e.getMessage());
+        }
     }
     public static void addCarToList(String model,String registration,double weight,int speed) {
-        Silnik silnik = new Silnik("Domyślny silnik", weight * 0.4, 3000, 6000);
-        SkrzyniaBiegow skrzynia = new SkrzyniaBiegow("Domyślna skrzynia", weight * 0.2, 2000, 5);
-        Sprzeglo sprzeglo = new Sprzeglo("Domyślne sprzęgło", weight * 0.1, 1000);
+        Silnik silnik = new Silnik("Domyslny silnik", weight * 0.4, 3000, 6000);
+        SkrzyniaBiegow skrzynia = new SkrzyniaBiegow("Domyslna skrzynia", weight * 0.2, 2000, 5);
+        Sprzeglo sprzeglo = new Sprzeglo("Domyslne sprzeglo", weight * 0.1, 1000);
         Pozycja pozycja = new Pozycja(0, 0);
 
         Samochod nowy = new Samochod(model,registration,speed,silnik,skrzynia,sprzeglo,pozycja);
@@ -207,8 +278,97 @@ public class HelloController {
 
         Stage stage = new Stage();
         stage.setScene(new Scene(loader.load()));
-        stage.setTitle("Dodaj nowy samochód");
+        stage.setTitle("Dodaj nowy samochod");
         stage.show();
     }
+    @FXML
+    public void onUsunSamochod(ActionEvent actionEvent) {
+        if (samochod == null) return;
+
+        samochody.remove(samochod);
+
+        if (!samochody.isEmpty()) {
+            samochod = samochody.get(0);
+            carComboBox.getSelectionModel().selectFirst();
+        } else {
+            samochod = null;
+            carComboBox.getSelectionModel().clearSelection();
+        }
+
+        refresh();
+    }
+    public void pokazBlad(String wiadomosc) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Blad");
+        alert.setHeaderText(null);
+        alert.setContentText(wiadomosc);
+        alert.showAndWait();
+    }
+    @Override
+    public void update() {
+        Platform.runLater(this::refresh);
+    }
+    private boolean obrotyZaDuze() {
+        int bieg = samochod.getSkrzynia().getAktBieg();
+        int obroty = samochod.getSilnik().getObroty();
+
+        if (bieg == 0) return false;
+
+        int max;
+        switch (bieg) {
+            case 1 -> max = 2500;
+            case 2 -> max = 3000;
+            case 3 -> max = 3500;
+            case 4 -> max = 4000;
+            case 5 -> max = 4500;
+            default -> max = 5500;
+        }
+        return obroty > max;
+    }
+    private boolean biegZaDuzyDoPredkosci() {
+        int bieg = samochod.getSkrzynia().getAktBieg();
+        double v = samochod.getAktPredkosc();
+
+        return switch (bieg) {
+            case 1 -> v > 25;
+            case 2 -> v > 45;
+            case 3 -> v > 70;
+            case 4 -> v > 100;
+            case 5 -> v > 140;
+            default -> false;
+        };
+    }
+    private void walidujStanJazdy() {
+        int bieg = samochod.getSkrzynia().getAktBieg();
+
+        if (bieg == 0) {
+            // luz
+            gearboxGearTextField.setStyle("-fx-background-color: #e0e0e0;");
+            engineRpmTextField.setStyle("-fx-background-color: #e0e0e0;");
+            return;
+        }
+
+        if (obrotyZaDuze()) {
+            gearboxGearTextField.setStyle("-fx-background-color: #ffcccc;");
+            engineRpmTextField.setStyle("-fx-background-color: #ffcccc;");
+            System.out.println("Za wysokie obroty – zmien bieg!");
+            return;
+        }
+
+        if (biegZaDuzyDoPredkosci()) {
+            gearboxGearTextField.setStyle("-fx-background-color: #ffcccc;");
+            engineRpmTextField.setStyle("-fx-background-color: #ffcccc;");
+            System.out.println("Bieg za duzy do predkosci!");
+            return;
+        }
+        gearboxGearTextField.setStyle("-fx-background-color: #ccffcc;");
+        engineRpmTextField.setStyle("-fx-background-color: #ccffcc;");
+    }
+
+
+
+
+
 
 }
+
